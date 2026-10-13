@@ -1,0 +1,31 @@
+{
+  "document_id": "DOC-ACME-2026-881",
+  "document_type": "INVOICE",
+  "vendor": "Acme Corp",
+  "invoice_number": "INV-ACM-2026-1042",
+  "issue_date": "2026-10-01",
+  "due_date": "2026-10-31",
+  "currency": "USD",
+  "items": [
+    {
+      "description": "Cloud AI Infrastructure Cluster - Month of October",
+      "quantity": 1,
+      "unit_price": 3500.00,
+      "total": 3500.00
+    },
+    {
+      "description": "Enterprise SLA & On-Call Engineering Support",
+      "quantity": 1,
+      "unit_price": 1350.00,
+      "total": 1350.00
+    }
+  ],
+  "subtotal": 4850.00,
+  "tax": 0.00,
+  "total_amount": 4850.00,
+  "payment_details": {
+    "bank_name": "Silicon Valley Commercial Bank",
+    "account_number": "XXXX-XXXX-9921",
+    "swift": "SVCB2026"
+  }
+}

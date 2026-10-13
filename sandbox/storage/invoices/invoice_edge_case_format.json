@@ -1,0 +1,11 @@
+{
+  "document_id": "DOC-EDGE-2026-90",
+  "document_type": "INVOICE",
+  "vendor": "Acme Corp",
+  "invoice_number": "INV-ACM-EDGE-2026",
+  "issue_date": "2026-10-05",
+  "due_date": "10/28/2026",
+  "currency": "$",
+  "amount_raw_string": "$ 2,450.00",
+  "note": "Formatted in non-standard raw currency string requiring normalization"
+}

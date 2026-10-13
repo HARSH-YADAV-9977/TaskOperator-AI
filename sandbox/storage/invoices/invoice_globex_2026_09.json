@@ -1,0 +1,20 @@
+{
+  "document_id": "DOC-GLBX-2026-119",
+  "document_type": "INVOICE",
+  "vendor": "Globex Corporation",
+  "invoice_number": "INV-GLB-2026-092",
+  "issue_date": "2026-09-15",
+  "due_date": "2026-09-30",
+  "currency": "USD",
+  "items": [
+    {
+      "description": "Enterprise Security Audit & Penetration Testing",
+      "quantity": 1,
+      "unit_price": 7200.00,
+      "total": 7200.00
+    }
+  ],
+  "subtotal": 7200.00,
+  "tax": 0.00,
+  "total_amount": 7200.00
+}

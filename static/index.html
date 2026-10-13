@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskOperator-AI | Autonomous Enterprise Worker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo-icon">
+                    <span class="pulse-ring"></span>
+                    <span class="core-dot"></span>
+                </div>
+                <div>
+                    <h1>TaskOperator <span class="badge-tag">AUTONOMOUS AGENT</span></h1>
+                    <p class="subtitle">Enterprise Task Operator &amp; Independent Verification Engine</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-reset-erp" class="btn btn-secondary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    Reset ERP Sandbox
+                </button>
+                <div id="agent-status-badge" class="status-indicator status-idle">
+                    <span class="dot"></span>
+                    <span class="text">AGENT IDLE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <main class="main-grid">
+            <!-- Left Column: Goal & Plan Execution -->
+            <section class="panel plan-panel">
+                <div class="panel-header">
+                    <h2>Goal Specification</h2>
+                    <span class="hint">CentrAlign Evaluation Core Loop</span>
+                </div>
+                
+                <div class="goal-input-container">
+                    <textarea id="task-goal-input" rows="3" placeholder="Enter business objective (e.g., 'Find latest invoice from Acme Corp, extract amount and due date, enter into ERP, and verify')...">Find the latest invoice from Acme Corp, extract the amount and due date, enter it into our internal system, and tell me once it is done.</textarea>
+                    
+                    <div class="preset-pills">
+                        <span class="preset-label">Presets:</span>
+                        <button class="pill" onclick="setPreset('Acme Corp')">Acme Corp Invoice</button>
+                        <button class="pill" onclick="setPreset('Globex Corporation')">Globex Corp Entry</button>
+                        <button class="pill" onclick="setPreset('Edge Case')">Edge-case Format Test</button>
+                    </div>
+
+                    <div class="action-bar">
+                        <div class="toggle-group">
+                            <label class="switch">
+                                <input type="checkbox" id="auto-approve-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="toggle-label">Auto-Approve Financial Gate (Demo)</span>
+                        </div>
+                        <div class="btn-group">
+                            <button id="btn-start-task" class="btn btn-primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                Run Autonomous Agent
+                            </button>
+                            <button id="btn-step-task" class="btn btn-outline" disabled>Step Forward</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution Plan Steps Timeline -->
+                <div class="plan-timeline-container">
+                    <div class="section-title-row">
+                        <h3>Action Decomposition Plan</h3>
+                        <span id="step-count-badge" class="badge">0 Steps</span>
+                    </div>
+                    <div id="steps-timeline" class="steps-timeline">
+                        <div class="empty-state">No active task. Click "Run Autonomous Agent" to generate dynamic plan.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Column: Verification & Audit Evidence -->
+            <section class="panel evidence-panel">
+                <!-- Independent Verification Card -->
+                <div class="verification-card" id="verification-card">
+                    <div class="verif-header">
+                        <div class="verif-title-group">
+                            <div class="shield-icon" id="verif-shield">🛡️</div>
+                            <div>
+                                <h3>Independent Verification Engine</h3>
+                                <p>Validates raw database state independently from agent memory</p>
+                            </div>
+                        </div>
+                        <span id="verif-status-badge" class="badge-verif badge-verif-pending">AWAITING EXECUTION</span>
+                    </div>
+
+                    <div id="verif-details" class="verif-body">
+                        <div class="checks-list" id="verif-checks-list">
+                            <div class="check-item"><span class="check-icon">⏳</span> Record Existence Check in SQLite Ledger</div>
+                            <div class="check-item"><span class="check-icon">⏳</span> Amount Numerical Precision Match</div>
+                            <div class="check-item"><span class="check-icon">⏳</span> Vendor Entity Match Verification</div>
+                            <div class="check-item"><span class="check-icon">⏳</span> Cryptographic Proof Generation</div>
+                        </div>
+                        <div class="proof-box" id="proof-box" style="display: none;">
+                            <span class="proof-label">SHA-256 Proof Digest:</span>
+                            <code id="proof-hash-code">--</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live ERP Database State Table -->
+                <div class="erp-preview-section">
+                    <div class="section-title-row">
+                        <h3>Simulated Enterprise ERP Database</h3>
+                        <span class="hint-small">Table: <code>erp_invoices</code></span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="erp-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Invoice #</th>
+                                    <th>Vendor</th>
+                                    <th>Amount</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="erp-table-body">
+                                <tr><td colspan="6" class="text-center text-muted">No records in ledger. Run task to record.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Execution Terminal / Logs -->
+                <div class="terminal-section">
+                    <div class="terminal-header">
+                        <div class="dots">
+                            <span class="red"></span>
+                            <span class="yellow"></span>
+                            <span class="green"></span>
+                        </div>
+                        <span class="terminal-title">Agent Execution Stream &amp; Audit Trail</span>
+                        <button class="btn-text" onclick="clearLogs()">Clear</button>
+                    </div>
+                    <div id="terminal-body" class="terminal-body">
+                        <div class="log-line system">[SYSTEM READY] Operator initialized. Awaiting business objective.</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Human Approval Modal -->
+        <div id="approval-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <div class="warning-badge">⚠️ Human-in-the-Loop Approval Required</div>
+                    <h3>Authorize ERP Ledger Modification</h3>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-desc">The autonomous agent has parsed an external invoice and is requesting permission to write a financial liability into the ERP system:</p>
+                    <div class="approval-card" id="approval-details-card">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-reject-modal" class="btn btn-danger">Reject &amp; Abort</button>
+                    <button id="btn-approve-modal" class="btn btn-success">Approve &amp; Commit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
