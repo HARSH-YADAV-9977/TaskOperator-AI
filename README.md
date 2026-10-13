@@ -72,7 +72,7 @@ TaskOperator-AI/
 │   └── storage/invoices/   # Real sample documents (standard, Globex, and malformed edge cases)
 ├── static/                 # Web Dashboard (Vanilla HTML5 / CSS3 / ES6)
 ├── tests/
-│   └── test_agent.py       # Automated unit test suite (autonomy, verifier tamper detection, approval gate)
+│   └── test_agent.py       # Automated unit test suite (5 comprehensive unit tests)
 ├── app.py                  # Flask REST API & Web Dashboard backend
 ├── run_cli.py              # CLI runner for headless & automated batch execution
 └── requirements.txt        # Minimal, zero-bloat dependencies
@@ -106,7 +106,35 @@ TaskOperator-AI/
 
 ---
 
-## 5. Quick Start & Setup Instructions
+## 5. Engineering Challenges & Diagnostic Debugging
+
+During development and stress-testing, key edge-case challenges were identified and engineered for reliability:
+
+### Challenge 1: The "False Recovery" & Missing Record Reporting Bug
+* **Symptom:** In edge cases where an invoice had already been inserted, Action 05 initially displayed `"Successfully created ERP ledger entry ID #None with status 'None'"` while marking the step as `RECOVERED`.
+* **Root Cause:**
+  1. When duplicate insertion failed, the recovery engine suggested verifying the existing record, but `_execute_tool` called the write tool again rather than querying the existing ERP record.
+  2. The recovery block did not check whether the secondary attempt succeeded before setting `step.status = RECOVERED`.
+  3. Observation formatting assumed `result["record"]` was populated and read `None` values without validation.
+* **Resolution:**
+  - Added `get_existing_bill` tool handler when recovery suggests `verify_existing`.
+  - Enforced a hard verification in `operator.step()`: if a recovery re-attempt fails, the step is strictly marked `FAILED` with `is_failed = True`. A failed write is **never** labeled as `COMPLETED` or `RECOVERED`.
+  - Added strict assertions in `_format_observation` to prevent formatting null IDs or statuses.
+
+### Challenge 2: State Resumption in Human Approval
+* **Symptom:** Approving an action from the UI was previously triggering a full task re-initialization rather than resuming the in-flight task.
+* **Resolution:** Frontend `handleApproval` now calls the `/api/task/run-all` resumption endpoint with `auto_approve: true`, ensuring existing context memory is preserved and remaining steps execute seamlessly.
+
+---
+
+## 6. Lessons Learned
+
+1. **Autonomy Requires Strict Verification Boundaries:** An autonomous agent cannot evaluate its own success. Separating the execution loop from an out-of-band verification engine that queries ground truth is the single most effective way to eliminate hallucinations.
+2. **Deterministic Fallbacks Beat Fragile Prompts:** Relying entirely on LLM prompt obedience for mathematical parsing or SQL insertion produces unpredictable edge-case failures. A hybrid system where the LLM handles ambiguity while deterministic, typed Python tools handle mutations and state transitions is substantially more reliable.
+
+---
+
+## 7. Quick Start & Setup Instructions
 
 ### Prerequisites
 - Python 3.10+ (Tested on Python 3.13)
@@ -125,13 +153,13 @@ pip install -r requirements.txt
 
 ### Step 3: Run the Automated Test Suite
 ```bash
-python -m unittest tests/test_agent.py
+python -m unittest tests/test_agent.py -v
 ```
-*Output: All 3 unit tests pass in ~0.2s.*
+*Output: All 5 unit tests pass in ~0.24s.*
 
 ---
 
-## 6. Execution Options
+## 8. Execution Options
 
 ### Option A: Interactive Web Dashboard
 Run the local web dashboard:
@@ -154,7 +182,7 @@ python run_cli.py
 
 ---
 
-## 7. Known Limitations
+## 9. Known Limitations
 
 - **Document Formats:** Current prototype processes structured JSON/Text representations of invoices. OCR for raw scanned PDF/images is not yet integrated.
 - **Single-Agent Architecture:** All actions are currently orchestrated by a single central operator loop rather than a swarm of specialized sub-agents.
@@ -162,7 +190,7 @@ python run_cli.py
 
 ---
 
-## 8. What Would Be Built Next (Roadmap)
+## 10. What Would Be Built Next (Roadmap)
 
 1. **Multimodal Browser Automation (Playwright/Computer Use):** Connect the tool registry to Playwright to automate actual web-based ERP interfaces (e.g., SAP, NetSuite, or QuickBooks).
 2. **Dynamic DAG Re-Planning:** If an intermediate tool observation yields unexpected findings (e.g., vendor credit balance exists), dynamically restructure remaining steps to deduct credit before recording.
@@ -170,7 +198,7 @@ python run_cli.py
 
 ---
 
-## 9. Assumptions Made
+## 11. Assumptions Made
 
 - Company ERP master table is accessible via local standard database connections.
 - Invoices for processing are deposited in accessible company document storage.
@@ -178,7 +206,7 @@ python run_cli.py
 
 ---
 
-## 10. Tech Stack & External Components
+## 12. Tech Stack & External Components
 
 - **Backend:** Python 3.13, Flask 3.1.1, Flask-CORS 6.0.1
 - **Schemas & Validation:** Pydantic 2.11.7

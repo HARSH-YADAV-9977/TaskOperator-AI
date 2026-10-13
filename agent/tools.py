@@ -135,10 +135,18 @@ class ToolRegistry:
             return {"success": True, "registered": True, "vendor": vendor_info}
         return {"success": True, "registered": False, "message": f"Vendor '{vendor_name}' not yet registered in ERP master."}
 
+    def get_existing_bill(self, invoice_number: str) -> Dict[str, Any]:
+        """Retrieves an existing bill from ERP when duplicate is encountered during recovery."""
+        row = self.erp.query_invoice(invoice_number)
+        if row:
+            return {"success": True, "record": row, "reused": True}
+        return {"success": False, "error": f"Invoice {invoice_number} not found in ERP ledger"}
+
     def record_erp_bill(self, invoice_number: str, vendor_name: str, amount: float,
                         currency: str, due_date: str) -> Dict[str, Any]:
         """
         Executes action to record accounts payable bill in ERP ledger.
+        Ensures valid persisted record ID and status are returned.
         """
         try:
             record = self.erp.create_payable_entry(
@@ -149,6 +157,8 @@ class ToolRegistry:
                 due_date=due_date,
                 status="RECORDED"
             )
+            if not record or record.get("id") is None or not record.get("status"):
+                return {"success": False, "error_type": "DATABASE_ERROR", "message": "ERP write succeeded but returned invalid record metadata"}
             return {"success": True, "record": record}
         except ValueError as val_err:
             return {"success": False, "error_type": "DUPLICATE", "message": str(val_err)}

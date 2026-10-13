@@ -95,11 +95,24 @@ class AutonomousOperator:
                     if revised_args:
                         step.tool_args.update(revised_args)
                     tool_result = self._execute_tool(step)
-                    step.status = StepStatus.RECOVERED
+
+                    # Verify whether re-attempt actually succeeded
+                    if tool_result.get("success", False):
+                        step.status = StepStatus.RECOVERED
+                        self._log(f"Step {step.step_id} recovered successfully.")
+                    else:
+                        failed_msg = tool_result.get("error") or tool_result.get("message", "Recovery re-attempt failed")
+                        step.status = StepStatus.FAILED
+                        step.error_message = failed_msg
+                        self.state.is_failed = True
+                        step.observation = f"Recovery failed: {failed_msg}"
+                        self._log(f"Step {step.step_id} recovery failed: {failed_msg}")
+                        return {"status": "FAILED", "error": failed_msg}
                 else:
                     step.status = StepStatus.FAILED
                     step.error_message = error_msg
                     self.state.is_failed = True
+                    step.observation = f"Execution failed: {error_msg}"
                     self._log(f"Step {step.step_id} failed: {error_msg}")
                     return {"status": "FAILED", "error": error_msg}
 
@@ -185,6 +198,11 @@ class AutonomousOperator:
             extracted = self.state.context_memory.get("extracted_invoice", {})
             if not extracted:
                 return {"success": False, "error": "Missing extracted invoice data in memory"}
+            
+            # Check if recovery instructed verifying existing record
+            if step.tool_args.get("fallback_action") == "verify_existing":
+                return self.tools.get_existing_bill(extracted["invoice_number"])
+
             return self.tools.record_erp_bill(
                 invoice_number=extracted["invoice_number"],
                 vendor_name=extracted["vendor_name"],
@@ -213,8 +231,16 @@ class AutonomousOperator:
         elif tool_name == "human_approval_gate":
             return "Approval confirmed by operator."
         elif tool_name == "record_erp_bill":
+            if not result.get("success", False):
+                return f"ERP write failed: {result.get('message') or result.get('error', 'Unknown error')}"
             rec = result.get("record", {})
-            return f"Successfully created ERP ledger entry ID #{rec.get('id')} with status '{rec.get('status')}'."
+            rec_id = rec.get("id")
+            rec_status = rec.get("status")
+            if rec_id is None or rec_status is None:
+                return f"ERP write error: Missing persisted record attributes (ID: {rec_id}, Status: {rec_status})"
+            if result.get("reused"):
+                return f"Detected existing ledger entry. Reused & verified ERP record ID #{rec_id} with status '{rec_status}'."
+            return f"Successfully created ERP ledger entry ID #{rec_id} with status '{rec_status}'."
         elif tool_name == "independent_verification":
             rep = result.get("verification_report", {})
             status = "PASS" if rep.get("verified") else "FAIL"

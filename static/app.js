@@ -153,6 +153,7 @@ function renderPlanSteps(state) {
             <div class="step-title">${s.title}</div>
             <div class="step-tool">Tool: ${s.tool_name}</div>
             ${s.observation ? `<div class="step-obs">${s.observation}</div>` : ''}
+            ${s.error_message ? `<div class="step-obs step-error">${s.error_message}</div>` : ''}
         `;
         stepsTimeline.appendChild(card);
     });
@@ -194,10 +195,30 @@ async function handleApproval(approved) {
         renderPlanSteps(currentTaskState);
         await updateERPTable();
 
-        if (approved && !currentTaskState.is_completed) {
-            // finish remaining
-            await handleRunTask();
+        if (approved && !currentTaskState.is_completed && !currentTaskState.is_failed) {
+            // Resume execution of remaining steps to completion
+            const runRes = await fetch(`${API_BASE}/task/run-all`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ auto_approve: true })
+            });
+            const runData = await runRes.json();
+            currentTaskState = runData.state;
+            renderPlanSteps(currentTaskState);
+            await updateERPTable();
+
+            if (runData.status === "COMPLETED") {
+                setAgentStatus("success", "TASK COMPLETED & VERIFIED");
+                renderVerification(currentTaskState.verification_result);
+                addLog(`[VERIFIED] Task finished with independent database verification proof.`, "success");
+            } else if (currentTaskState.is_failed) {
+                setAgentStatus("idle", "TASK FAILED");
+            }
+            btnStart.disabled = false;
         } else {
+            if (currentTaskState.is_failed) {
+                setAgentStatus("idle", "TASK ABORTED / REJECTED");
+            }
             btnStart.disabled = false;
         }
     } catch (err) {
