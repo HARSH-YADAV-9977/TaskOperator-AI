@@ -14,7 +14,7 @@ Enterprise knowledge workers spend countless hours moving between fragmented sys
 Build a working prototype of an autonomous AI task operator that receives a high-level natural-language business objective—such as:
 > *"Find the latest invoice from Acme Corp, extract the amount and due date, enter it into our internal system, and tell me once it is done."*
 
-...and autonomously plans, executes, verifies, and provides immutable audit evidence for the completed work with minimal human supervision.
+...and autonomously plans, executes, verifies, and provides verifiable audit evidence for the completed work with minimal human supervision.
 
 ---
 
@@ -24,32 +24,32 @@ Build a working prototype of an autonomous AI task operator that receives a high
   [Natural Language Goal]
              │
              ▼
-   ┌───────────────────┐
-   │ 1. Dynamic Plan   │ ──> Decomposes intent into actionable sub-tasks (DAG)
-   └─────────┬─────────┘
-             │
-             ▼
-   ┌───────────────────┐
-   │ 2. Tool Execution │ ──> Search Repository ──> Parse Invoice ──> Query ERP Master
-   └─────────┬─────────┘
-             │
-             ▼
-   ┌───────────────────┐
-   │ 3. Human Approval │ ──> Halts execution before committing sensitive financial liability
-   └─────────┬─────────┘
-             │
-             ▼
-   ┌───────────────────┐
-   │ 4. State Recovery │ ──> Sanitizes irregular currency/date formats & recovers
-   └─────────┬─────────┘
-             │
-             ▼
-   ┌───────────────────┐
-   │ 5. Indep. Verify  │ ──> Independently inspects primary SQLite DB table (not memory)
-   └─────────┬─────────┘
-             │
-             ▼
-  [Cryptographic Proof & Diff Audit Evidence]
+   ┌───────────────────────┐
+   │ 1. Goal Decomposition │ ──> Decomposes intent into structured action steps (DAG)
+   └───────────┬───────────┘
+               │
+               ▼
+   ┌───────────────────────┐
+   │ 2. Tool Execution     │ ──> Search Repository ──> Parse Invoice ──> Query ERP Master
+   └───────────┬───────────┘
+               │
+               ▼
+   ┌───────────────────────┐
+   │ 3. Human Approval     │ ──> Halts execution before committing sensitive financial liability
+   └───────────┬───────────┘
+               │
+               ▼
+   ┌───────────────────────┐
+   │ 4. State Recovery     │ ──> Sanitizes irregular currency/date formats & recovers
+   └───────────┬───────────┘
+               │
+               ▼
+   ┌───────────────────────┐
+   │ 5. Indep. Verify      │ ──> Independently inspects primary SQLite DB table (not memory)
+   └───────────┬───────────┘
+               │
+               ▼
+  [Integrity Evidence Digest & Ledger State Diff]
 ```
 
 ---
@@ -64,7 +64,7 @@ TaskOperator-AI/
 │   ├── operator.py         # Autonomous loop orchestrator (Plan -> Execute -> Observe -> Verify)
 │   ├── planner.py          # Decomposes natural language requests into structured Action DAGs
 │   ├── tools.py            # Tool abstractions (file search, regex-resilient parser, ERP caller)
-│   ├── verifier.py         # Independent Verifier: directly inspects DB state & computes SHA-256 proof
+│   ├── verifier.py         # Independent Verifier: directly inspects DB state & computes SHA-256 integrity digest
 │   ├── recovery.py         # Failure detection, parameter sanitization, and fallback strategies
 │   └── models.py           # Typed Pydantic data schemas for steps, plans, and runtime states
 ├── sandbox/
@@ -88,7 +88,7 @@ TaskOperator-AI/
      - Record exists in `erp_invoices` table
      - Amount matches the extracted amount down to the exact cent (`abs(db - expected) < 0.001`)
      - Vendor and due dates match
-     - Emits a cryptographic SHA-256 proof digest for tamper-evident auditing.
+     - Computes a SHA-256 cryptographic integrity digest as tamper-evident audit evidence.
 
 2. **Simulated Sandbox with SQLite:**
    * *Decision:* Built a lightweight, realistic enterprise ERP sandbox using SQLite rather than mocking API calls with arbitrary dictionaries.
