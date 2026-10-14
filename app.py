@@ -38,6 +38,16 @@ def start_task():
     })
 
 
+def serialize_data(obj):
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    if isinstance(obj, dict):
+        return {k: serialize_data(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [serialize_data(i) for i in obj]
+    return obj
+
+
 @app.route("/api/task/step", methods=["POST"])
 def step_task():
     data = request.json or {}
@@ -45,7 +55,7 @@ def step_task():
     
     result = operator.step(auto_approve=auto_approve)
     return jsonify({
-        "step_result": result,
+        "step_result": serialize_data(result),
         "state": operator.state.model_dump() if operator.state else None
     })
 
@@ -69,7 +79,7 @@ def approve_step():
     
     res = operator.submit_human_approval(approved=approved)
     return jsonify({
-        "result": res,
+        "result": serialize_data(res),
         "state": operator.state.model_dump() if operator.state else None
     })
 

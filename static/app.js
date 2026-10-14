@@ -28,6 +28,7 @@ const btnRejectModal = document.getElementById("btn-reject-modal");
 let currentTaskState = null;
 
 // Presets
+// Presets
 window.setPreset = function(type) {
     if (type === 'Acme Corp') {
         goalInput.value = "Find the latest invoice from Acme Corp, extract the amount and due date, enter it into our internal system, and tell me once it is done.";
@@ -36,6 +37,23 @@ window.setPreset = function(type) {
     } else if (type === 'Edge Case') {
         goalInput.value = "Find invoice for Acme Corp with non-standard currency formatting, extract parameters, and safely record into system.";
     }
+    currentTaskState = null;
+    stepsTimeline.innerHTML = '<div class="empty-state">Preset selected. Click "Run Autonomous Agent" or "Step Forward" to execute.</div>';
+    stepCountBadge.textContent = "0 Steps";
+    verifBadge.className = "badge-verif badge-verif-pending";
+    verifBadge.textContent = "AWAITING EXECUTION";
+    verifChecksList.innerHTML = `
+        <div class="check-item"><span class="check-icon">⏳</span> Record Existence Check in SQLite Ledger</div>
+        <div class="check-item"><span class="check-icon">⏳</span> Amount Numerical Precision Match</div>
+        <div class="check-item"><span class="check-icon">⏳</span> Vendor Entity Match Verification</div>
+        <div class="check-item"><span class="check-icon">⏳</span> Cryptographic Integrity Digest Generation</div>
+    `;
+    proofBox.style.display = "none";
+    proofHashCode.textContent = "--";
+    setAgentStatus("idle", "AGENT IDLE");
+    btnStart.disabled = false;
+    btnStep.disabled = false;
+    addLog(`[PRESET] Loaded "${type}" scenario.`, "system");
 };
 
 // Clear terminal
@@ -90,27 +108,54 @@ async function handleRunTask() {
         if (runData.status === "AWAITING_APPROVAL") {
             setAgentStatus("waiting", "AWAITING APPROVAL");
             showApprovalModal(currentTaskState);
+            btnStart.disabled = false;
+            btnStep.disabled = false;
         } else if (runData.status === "COMPLETED") {
             setAgentStatus("success", "TASK COMPLETED & VERIFIED");
             renderVerification(currentTaskState.verification_result);
             addLog(`[VERIFIED] Task finished with independent database verification proof.`, "success");
             btnStart.disabled = false;
+            btnStep.disabled = false;
         } else {
             setAgentStatus("idle", "AGENT HALTED");
             btnStart.disabled = false;
+            btnStep.disabled = false;
         }
 
     } catch (err) {
         addLog(`[ERROR] Network or execution failure: ${err.message}`, "error");
         setAgentStatus("idle", "AGENT ERROR");
         btnStart.disabled = false;
+        btnStep.disabled = false;
     }
 }
 
 // Step-by-step execution
 async function handleStepTask() {
-    if (!currentTaskState) return;
+    const goal = goalInput.value.trim();
+    if (!goal) return alert("Please specify a business task goal.");
+
     try {
+        // If no task has started, or previous task completed/failed, initialize a new task first
+        if (!currentTaskState || currentTaskState.is_completed || currentTaskState.is_failed) {
+            setAgentStatus("running", "PLANNING & INITIALIZING");
+            addLog(`[INITIALIZE] Submitting goal: "${goal}"`, "system");
+            
+            const initRes = await fetch(`${API_BASE}/task/start`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ goal })
+            });
+            const initData = await initRes.json();
+            currentTaskState = initData.state;
+            renderPlanSteps(currentTaskState);
+            addLog(`[PLAN CREATED] ${currentTaskState.plan.steps.length} sub-actions decomposed. Executing Step 1...`, "system");
+        }
+
+        btnStep.disabled = true;
+        btnStart.disabled = true;
+        setAgentStatus("running", `EXECUTING STEP ${currentTaskState.current_step_index + 1}`);
+
         const autoApprove = autoApproveToggle.checked;
         const res = await fetch(`${API_BASE}/task/step`, {
             method: "POST",
@@ -123,13 +168,24 @@ async function handleStepTask() {
         await updateERPTable();
 
         if (data.step_result?.status === "AWAITING_APPROVAL") {
+            setAgentStatus("waiting", "AWAITING APPROVAL");
             showApprovalModal(currentTaskState);
         } else if (currentTaskState.is_completed) {
             setAgentStatus("success", "TASK COMPLETED & VERIFIED");
             renderVerification(currentTaskState.verification_result);
+            addLog(`[VERIFIED] Task finished with independent database verification proof.`, "success");
+        } else if (currentTaskState.is_failed) {
+            setAgentStatus("idle", "TASK FAILED");
+        } else {
+            setAgentStatus("running", `READY FOR STEP ${currentTaskState.current_step_index + 1}`);
         }
+
+        btnStart.disabled = false;
+        btnStep.disabled = currentTaskState.is_completed || currentTaskState.is_failed;
     } catch (err) {
         addLog(`[STEP ERROR] ${err.message}`, "error");
+        btnStart.disabled = false;
+        btnStep.disabled = false;
     }
 }
 
@@ -215,15 +271,18 @@ async function handleApproval(approved) {
                 setAgentStatus("idle", "TASK FAILED");
             }
             btnStart.disabled = false;
+            btnStep.disabled = currentTaskState.is_completed || currentTaskState.is_failed;
         } else {
             if (currentTaskState.is_failed) {
                 setAgentStatus("idle", "TASK ABORTED / REJECTED");
             }
             btnStart.disabled = false;
+            btnStep.disabled = true;
         }
     } catch (err) {
         addLog(`[APPROVAL ERROR] ${err.message}`, "error");
         btnStart.disabled = false;
+        btnStep.disabled = false;
     }
 }
 
@@ -283,7 +342,20 @@ async function handleResetErp() {
         addLog("[RESET] ERP Database wiped clean for demonstration.", "system");
         verifBadge.className = "badge-verif badge-verif-pending";
         verifBadge.textContent = "AWAITING EXECUTION";
+        verifChecksList.innerHTML = `
+            <div class="check-item"><span class="check-icon">⏳</span> Record Existence Check in SQLite Ledger</div>
+            <div class="check-item"><span class="check-icon">⏳</span> Amount Numerical Precision Match</div>
+            <div class="check-item"><span class="check-icon">⏳</span> Vendor Entity Match Verification</div>
+            <div class="check-item"><span class="check-icon">⏳</span> Cryptographic Integrity Digest Generation</div>
+        `;
         proofBox.style.display = "none";
+        proofHashCode.textContent = "--";
+        currentTaskState = null;
+        stepsTimeline.innerHTML = '<div class="empty-state">No active task. Click "Run Autonomous Agent" or "Step Forward" to generate dynamic plan.</div>';
+        stepCountBadge.textContent = "0 Steps";
+        setAgentStatus("idle", "AGENT IDLE");
+        btnStart.disabled = false;
+        btnStep.disabled = false;
     } catch (e) {
         alert("Failed to reset ERP: " + e.message);
     }

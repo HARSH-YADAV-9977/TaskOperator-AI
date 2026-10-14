@@ -13,3 +13,4 @@ ENV/
 !sandbox/storage/
 *.log
 .DS_Store
+*.mp4
