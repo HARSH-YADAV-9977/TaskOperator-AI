@@ -75,7 +75,7 @@ def main():
         verif = state.verification_result
         if verif:
             print(f"  Verification Status : {'PASSED (VERIFIED)' if verif.get('verified') else 'FAILED'}")
-            print(f"  Cryptographic Proof : {verif.get('proof_hash')}")
+            print(f"  Integrity Digest    : {verif.get('proof_hash')}")
             print(f"  Evidence Summary    : {json.dumps(verif.get('evidence'), indent=4)}")
         else:
             print("  No independent verification report generated.")
