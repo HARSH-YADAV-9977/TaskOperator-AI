@@ -2,7 +2,7 @@
 
 > **Submission for CentrAlign AI — AI Engineering Hiring Challenge**  
 > **Role:** AI Engineering Intern (Open to Founding Engineer Evaluation)  
-> **Repository:** [https://github.com/YOUR_GITHUB_USERNAME/TaskOperator-AI](https://github.com/YOUR_GITHUB_USERNAME/TaskOperator-AI)
+> **Repository:** [https://github.com/HARSH-YADAV-9977/TaskOperator-AI](https://github.com/HARSH-YADAV-9977/TaskOperator-AI)
 
 ---
 
@@ -142,7 +142,7 @@ During development and stress-testing, key edge-case challenges were identified 
 
 ### Step 1: Clone and Navigate
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/TaskOperator-AI.git
+git clone https://github.com/HARSH-YADAV-9977/TaskOperator-AI.git
 cd TaskOperator-AI
 ```
 
